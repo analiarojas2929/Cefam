@@ -3,42 +3,38 @@ name: Django CI/CD
 on:
   push:
     branches:
-      - main  # Cambia si tu rama principal es otra
+      - main
 
 jobs:
   build-and-run:
     runs-on: ubuntu-latest
+    env:
+      CI: true
 
     steps:
-      - name: Checkout del repositorio
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Configurar Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Instalar dependencias necesarias
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install django-crispy-forms
-          pip install pillow
-          pip install flask
-          pip install pywhatkit
-          pip install keyboard
+          pip install django-crispy-forms pillow flask pywhatkit keyboard
 
-      - name: Realizar migraciones
-        run: |
-          python manage.py migrate
+      - name: Apply migrations
+        run: python manage.py migrate
 
-      - name: Crear superusuario (si no existe)
+      - name: Create superuser if none exists
         run: |
           echo "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(username='admin').exists() or User.objects.create_superuser('admin', 'admin@example.com', 'adminpass')" | python manage.py shell
 
-      - name: Levantar servidor Django (solo para testing, no producción)
+      - name: Run tests
+        run: python manage.py test
+
+      - name: Start Django in background (for test/demo)
         run: |
           nohup python manage.py runserver 0.0.0.0:8000 &
-          sleep 10  # espera para asegurar que arranque el servidor
-
-      # Aquí podrías agregar tests automáticos o curl para probar la app si lo deseas
-
+          sleep 10
